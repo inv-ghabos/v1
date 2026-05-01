@@ -1,2 +1,2 @@
 # ghabos
-Sistema de finanzas Inversiones Ghabos v1
+Sistema Inversiones Ghabos
