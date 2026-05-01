@@ -869,7 +869,20 @@ select.pi optgroup { color: var(--muted); font-size: .7rem; }
   <div class="pat-right">
     <button class="top-btn" onclick="exportCSV()">⬇ Exportar CSV</button>
     <button class="top-btn" onclick="syncGAS()">☁ Sincronizar</button>
-    <button class="top-btn danger" onclick="resetSistema()">⚠ Resetear</button>
+    <div style="position:relative;display:inline-block" id="adv-wrap">
+      <button class="top-btn" onclick="toggleAdvMenu()" title="Opciones avanzadas" style="padding:4px 8px;font-size:.7rem">⚙️</button>
+      <div id="adv-menu" style="
+        display:none;position:absolute;right:0;top:110%;
+        background:var(--s2);border:1px solid var(--bd2);
+        border-radius:8px;padding:8px;min-width:170px;
+        z-index:300;box-shadow:0 8px 24px rgba(0,0,0,.6);
+      ">
+        <div style="font-size:.58rem;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:2px 6px 6px">⚠ Zona Peligrosa</div>
+        <button class="top-btn danger" onclick="resetSistema()" style="width:100%;text-align:left;padding:6px 10px;font-size:.68rem">
+          🗑 Resetear todo el sistema
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -997,7 +1010,7 @@ select.pi optgroup { color: var(--muted); font-size: .7rem; }
 
     <!-- EMPRESA — ahora segunda columna -->
     <div class="col" id="col-empresa">
-      <div class="col-head"><div class="hdot" style="background:var(--acc)"></div>MULTISERVICIOS RIVAS TECH — Negocio</div>
+      <div class="col-head"><div class="hdot" style="background:var(--acc)"></div>INVERSIONES GHABOS — Negocio</div>
       <div class="col-scroll">
 
         <div class="acard" style="border-left-color:var(--efectivo)">
@@ -1044,7 +1057,7 @@ select.pi optgroup { color: var(--muted); font-size: .7rem; }
 
     <!-- PERSONAL — ahora tercera columna -->
     <div class="col" id="col-personal">
-      <div class="col-head"><div class="hdot" style="background:var(--purple)"></div>CRISTIAN — Personal</div>
+      <div class="col-head"><div class="hdot" style="background:var(--purple)"></div>GABRIEL — Personal</div>
       <div class="col-scroll">
 
         <div class="acard" style="border-left-color:var(--banpais)">
@@ -2051,6 +2064,24 @@ function exportCSV() {
 }
 
 /* ═══ RESETEAR ═══ */
+function toggleAdvMenu() {
+  const menu = document.getElementById('adv-menu');
+  if (!menu) return;
+  const isOpen = menu.style.display === 'block';
+  menu.style.display = isOpen ? 'none' : 'block';
+  /* Cerrar al hacer clic fuera */
+  if (!isOpen) {
+    setTimeout(() => {
+      document.addEventListener('click', function handler(e) {
+        if (!document.getElementById('adv-wrap').contains(e.target)) {
+          menu.style.display = 'none';
+          document.removeEventListener('click', handler);
+        }
+      });
+    }, 10);
+  }
+}
+
 function resetSistema() {
   if (!confirm('⚠ RESETEAR SISTEMA\n\nEsto borrará:\n• Todos los saldos\n• Todo el historial\n• Bolsillo · Diezmo · Calendario · Registro diario\n\n¿Continuar?')) return;
   if (!confirm('Segunda confirmación:\n¿Borrar absolutamente todo? No se puede deshacer.')) return;
