@@ -870,6 +870,7 @@ select.pi optgroup { color: var(--muted); font-size: .7rem; }
   <div class="pat-right">
     <button class="top-btn" onclick="exportCSV()">⬇ Exportar CSV</button>
     <button class="top-btn" onclick="syncGAS()">☁ Sincronizar</button>
+    <button class="top-btn" onclick="cierreMensual()" style="border-color:var(--amber);color:var(--amber)">📅 Cierre Mes</button>
     <div style="position:relative;display:inline-block" id="adv-wrap">
       <button class="top-btn" onclick="toggleAdvMenu()" title="Opciones avanzadas" style="padding:4px 8px;font-size:.7rem">⚙️</button>
       <div id="adv-menu" style="
@@ -1089,6 +1090,25 @@ select.pi optgroup { color: var(--muted); font-size: .7rem; }
           <button class="dbtn dbtn-reset" onclick="ofrendaEntregar()">Entregar / Resetear</button>
         </div>
         <div class="diezmo-hist" id="ofrenda-hist"></div>
+      </div>
+
+      <!-- CIERRE MENSUAL -->
+      <div class="psec psec-top" style="border-top-color:var(--amber)">
+        <div class="psec-title" style="border-left-color:var(--amber)">📅 Cierre Mensual</div>
+        <p style="font-size:.7rem;color:var(--muted);margin-bottom:8px">Genera el cierre del mes con ingresos, egresos, costos, ganancias, diezmos y ofrendas.</p>
+        <button onclick="loadFromGAS()" style="width:100%;background:var(--blue-bg);border:1px solid var(--bd2);color:var(--blue);border-radius:7px;padding:7px;font-size:.72rem;cursor:pointer;font-family:var(--font);font-weight:800;margin-bottom:8px">
+          ☁ Paso 1: Cargar desde Google Sheets
+        </button>
+        <button onclick="diagnosticarRegistros()" style="width:100%;background:var(--s3);border:1px solid var(--bd);color:var(--muted);border-radius:7px;padding:6px;font-size:.7rem;cursor:pointer;font-family:var(--font);font-weight:700;margin-bottom:6px">🔍 Diagnóstico — Ver mis registros</button>
+        <div class="pi-row" style="margin-bottom:8px">
+          <select id="cierre-mes" class="pi" style="margin:0;flex:1;font-size:.77rem"></select>
+          <select id="cierre-anio" class="pi" style="margin:0;width:80px;font-size:.77rem"></select>
+        </div>
+        <button class="btn-save" onclick="cierreMensual()" style="background:var(--amber);color:#080c10;margin-bottom:8px">📅 Paso 2: Generar Cierre</button>
+        <div id="cierres-hist-wrap" style="display:none">
+          <div style="font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;border-left:3px solid var(--amber);padding-left:7px">Historial de Cierres</div>
+          <div id="cierres-hist" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:5px"></div>
+        </div>
       </div>
 
     </div><!-- /panel -->
@@ -1562,6 +1582,59 @@ select.pi optgroup { color: var(--muted); font-size: .7rem; }
   </div>
 </div>
 
+<!-- MODAL CIERRE MENSUAL -->
+<div class="overlay" id="modal-cierre" onclick="if(event.target===this)closeCierreModal()">
+  <div class="modal" style="max-width:480px;width:95%">
+    <h3 style="color:var(--amber);margin-bottom:12px">📅 <span id="modal-cierre-titulo">Cierre Mensual</span></h3>
+    <div style="background:var(--s3);border-radius:8px;padding:12px;margin-bottom:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:var(--grn-bg);border:1px solid #0a3a1a;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">▲ Ingresos</div>
+          <div style="font-family:var(--mono);color:var(--green);font-size:.95rem;font-weight:600" id="mc-ingresos">L 0.00</div>
+        </div>
+        <div style="background:var(--red-bg);border:1px solid #3d0a0a;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">▼ Egresos</div>
+          <div style="font-family:var(--mono);color:var(--red);font-size:.95rem;font-weight:600" id="mc-egresos">L 0.00</div>
+        </div>
+        <div style="background:var(--red-bg);border:1px solid #3d0a0a;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">🔩 Costos</div>
+          <div style="font-family:var(--mono);color:var(--orange);font-size:.95rem;font-weight:600" id="mc-costos">L 0.00</div>
+        </div>
+        <div style="background:var(--amb-bg);border:1px solid #3d2a00;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">📈 Ganancia</div>
+          <div style="font-family:var(--mono);font-size:.95rem;font-weight:700" id="mc-ganancia">L 0.00</div>
+        </div>
+        <div style="background:var(--pur-bg);border:1px solid #3a1a6e;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">🙏 Diezmos</div>
+          <div style="font-family:var(--mono);color:var(--purple);font-size:.95rem" id="mc-diezmos">L 0.00</div>
+        </div>
+        <div style="background:var(--pur-bg);border:1px solid #4a1a7e;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">🎁 Ofrendas</div>
+          <div style="font-family:var(--mono);color:#c084fc;font-size:.95rem" id="mc-ofrendas">L 0.00</div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--bd2);margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase">Neto del Mes</div>
+          <div style="font-family:var(--mono);font-size:1.1rem;font-weight:700" id="mc-neto">L 0.00</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase">Margen</div>
+          <div style="font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--amber)" id="mc-margen">0%</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase">Movimientos</div>
+          <div style="font-family:var(--mono);font-size:1.1rem;color:var(--blue)" id="mc-movs">0</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeCierreModal()">Cerrar</button>
+      <button class="mbtn-ok" style="background:var(--amber);color:#080c10" onclick="guardarCierre()">💾 Guardar Cierre</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL TASAS -->
 
 <div class="overlay" id="modal-tasas" onclick="if(event.target===this)closeModal()">
@@ -1658,28 +1731,57 @@ async function loadFromGAS() {
     const resp = await fetch(GAS_URL + '?action=load', { method: 'GET' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
-    if (data && data.registros) {
-      registros = data.registros || [];
-      diezmoTotal = data.diezmoTotal || 0;
-      diezmoHistorial = data.diezmoHistorial || [];
-      sData = data.sData || {};
-      // Restaurar saldos si vienen
-      if (data.saldos) {
-        for (const id in data.saldos) {
-          const el = document.getElementById(id);
-          if (el) el.value = data.saldos[id];
+    if (data && data.registros && data.registros.length > 0) {
+      /* Normalizar registros que vienen de Google Sheets */
+      const regsNormalizados = data.registros.map(r => {
+        let fk = r.fechaKey || r.fecha || '';
+        if (fk && fk.includes('/')) {
+          const parts = fk.split('/');
+          if (parts.length === 3) {
+            const p0 = parseInt(parts[0]);
+            if (p0 > 12) {
+              fk = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+            } else {
+              fk = `${parts[2]}-${parts[0].padStart(2,'0')}-${parts[1].padStart(2,'0')}`;
+            }
+          }
         }
+        if (fk && fk.toString().includes('T')) fk = fk.toString().split('T')[0];
+        return {
+          ...r,
+          fechaKey:    fk,
+          neto:        parseFloat(r.neto)     || parseFloat(r.montoBruto) || 0,
+          bruto:       parseFloat(r.bruto)    || parseFloat(r.montoBruto) || 0,
+          costo:       parseFloat(r.costo)    || 0,
+          ganancia:    parseFloat(r.ganancia) || 0,
+          diezmo:      parseFloat(r.diezmo)   || 0,
+          ofrenda:     parseFloat(r.ofrenda)  || 0,
+          tipo:        r.tipo || 'IN',
+          desc:        r.desc || r.descripcion || '',
+          bancoNombre: r.bancoNombre || r.cuenta || '',
+          esCierre:    (r.categoria === 'Cierre Mensual') || r.esCierre || false
+        };
+      });
+
+      const idsLocales = new Set(registros.map(r => String(r.id)));
+      const regsNuevos = regsNormalizados.filter(r => !idsLocales.has(String(r.id)));
+      if (regsNuevos.length > 0) {
+        registros = [...regsNuevos, ...registros];
+      } else if (registros.length === 0) {
+        registros = regsNormalizados;
       }
-      calcular(); actualizarLog(); buildBancoFilter(); renderDiezmoHist();
-      statusEl.textContent = '✓ GAS: Cargado';
+
+      calcular(); actualizarLog(); buildBancoFilter();
+      renderDiezmoHist(); renderOfrendaHist(); renderProyectos();
+      saveAll();
+      statusEl.textContent = `✓ GAS: ${registros.length} registros`;
       statusEl.className = 'gas-status ok';
-      toast('Datos cargados desde Google Sheets ✓');
+      toast(`✓ ${regsNuevos.length > 0 ? regsNuevos.length + ' registros nuevos cargados' : 'Sincronizado con Google Sheets'}`);
     } else {
       statusEl.textContent = '⚡ GAS: Listo';
       statusEl.className = 'gas-status ok';
     }
   } catch (e) {
-    // GAS no disponible o sin datos remotos — usar localStorage normal
     statusEl.textContent = '⚡ GAS: Local';
     statusEl.className = 'gas-status';
     console.warn('GAS load fallback to localStorage:', e);
@@ -1707,7 +1809,8 @@ function boot() {
   const regFecha = document.getElementById('reg-fecha');
   if (regFecha) regFecha.value = workDate;
   poblarSelectorProyectos();
-  setType('IN'); // mostrar diezmo/ofrenda al cargar
+  inicializarSelectorCierre();
+  setType('IN');
   syncBadge();
 }
 
@@ -1814,6 +1917,232 @@ function eliminarProyecto(id) {
   proyectos = proyectos.filter(x => x.id !== id);
   saveAll(); renderProyectos(); poblarSelectorProyectos();
   toast('Proyecto eliminado', 'err');
+}
+
+/* ═══ DIAGNÓSTICO DE REGISTROS ═══ */
+function diagnosticarRegistros() {
+  const total = registros.length;
+  if (total === 0) {
+    alert('⚠ No hay registros en el sistema.\nSus datos están en Google Sheets pero no en este navegador.');
+    return;
+  }
+  const muestra = registros.slice(0,5).map(r =>
+    `• "${r.fecha}" | key:"${r.fechaKey}"`
+  ).join('\n');
+  const porMes = {};
+  registros.forEach(r => {
+    let fk = (r.fechaKey && r.fechaKey !== 'undefined') ? String(r.fechaKey) : '';
+    if (!fk && r.fecha) {
+      const f = String(r.fecha);
+      if (f.includes('T')) fk = f.split('T')[0];
+      else if (f.includes('/')) {
+        const p = f.split('/');
+        if (p.length === 3) fk = parseInt(p[0]) > 12
+          ? `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`
+          : `${p[2]}-${p[0].padStart(2,'0')}-${p[1].padStart(2,'0')}`;
+      }
+    }
+    if (fk) {
+      const key = fk.substring(0,7);
+      porMes[key] = (porMes[key]||0) + 1;
+    }
+  });
+  const resumen = Object.keys(porMes).sort().reverse()
+    .map(k=>`  ${k}: ${porMes[k]} registros`).join('\n');
+  alert(`📊 DIAGNÓSTICO\n\nTotal: ${total} registros\n\nÚltimas fechas:\n${muestra}\n\nPor mes:\n${resumen}`);
+}
+
+/* ═══════════════════════════════════════════
+   CIERRE MENSUAL — GABRIEL
+   ═══════════════════════════════════════════ */
+let cierreActual = null;
+
+function inicializarSelectorCierre() {
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const selMes  = document.getElementById('cierre-mes');
+  const selAnio = document.getElementById('cierre-anio');
+  if (!selMes || !selAnio) return;
+  if (selMes.options.length > 0 && selAnio.options.length > 0) return;
+  const ahora = new Date();
+  selMes.innerHTML = meses.map((m,i) =>
+    `<option value="${i}"${i===ahora.getMonth()?' selected':''}>${m}</option>`
+  ).join('');
+  const anioAct = ahora.getFullYear();
+  selAnio.innerHTML = [anioAct-1, anioAct, anioAct+1].map(a =>
+    `<option value="${a}"${a===anioAct?' selected':''}>${a}</option>`
+  ).join('');
+}
+
+function cierreMensual() {
+  inicializarSelectorCierre();
+  const selMes  = document.getElementById('cierre-mes');
+  const selAnio = document.getElementById('cierre-anio');
+  const ahora   = new Date();
+  const mesIdx  = selMes && selMes.value !== '' ? parseInt(selMes.value) : ahora.getMonth();
+  const anio    = selAnio && selAnio.value !== '' ? parseInt(selAnio.value) : ahora.getFullYear();
+  if (isNaN(mesIdx) || isNaN(anio)) { toast('Error al obtener mes/año', 'err'); return; }
+
+  const meses     = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                     'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const mesNombre = meses[mesIdx] + ' ' + anio;
+
+  const regs = registros.filter(r => {
+    if (r.esCierre) return false;
+
+    let fk = (r.fechaKey && r.fechaKey !== 'undefined') ? String(r.fechaKey) : '';
+
+    if (!fk && r.fecha) {
+      const f = String(r.fecha).trim();
+      if (f.includes('T')) {
+        fk = f.split('T')[0];
+      } else if (f.includes('/')) {
+        const p = f.split('/');
+        if (p.length === 3) {
+          fk = parseInt(p[0]) > 12
+            ? `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`
+            : `${p[2]}-${p[0].padStart(2,'0')}-${p[1].padStart(2,'0')}`;
+        }
+      } else {
+        fk = f;
+      }
+    }
+
+    if (!fk) return false;
+    if (fk.includes('T')) fk = fk.split('T')[0];
+    if (fk.includes('/')) {
+      const p = fk.split('/');
+      if (p.length === 3) {
+        fk = parseInt(p[0]) > 12
+          ? `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`
+          : `${p[2]}-${p[0].padStart(2,'0')}-${p[1].padStart(2,'0')}`;
+      }
+    }
+    const d = new Date(fk + 'T12:00:00');
+    if (isNaN(d.getTime())) return false;
+    return d.getMonth() === mesIdx && d.getFullYear() === anio;
+  });
+
+  if (regs.length === 0) toast(`Sin registros en ${mesNombre}`, 'warn');
+
+  const ingresos = regs.filter(r=>r.tipo==='IN').reduce((a,b)=>a+(b.neto||0),0);
+  const egresos  = regs.filter(r=>r.tipo==='OUT').reduce((a,b)=>a+(b.neto||0),0);
+  const costos   = regs.reduce((a,b)=>a+(b.costo||0),0);
+  const diezmos  = regs.reduce((a,b)=>a+(b.diezmo||0),0);
+  const ofrendas = regs.reduce((a,b)=>a+(b.ofrenda||0),0);
+  const ganancia = ingresos - costos - egresos;
+  const neto     = ingresos - egresos;
+  const margen   = ingresos > 0 ? ((ganancia/ingresos)*100).toFixed(1) : 0;
+
+  cierreActual = { mesNombre, mesIdx, anio, ingresos, egresos, costos, ganancia, neto, diezmos, ofrendas, margen, totalMovs: regs.length };
+
+  document.getElementById('modal-cierre-titulo').textContent = 'Cierre — ' + mesNombre;
+  document.getElementById('mc-ingresos').textContent = 'L ' + fmt(ingresos);
+  document.getElementById('mc-egresos').textContent  = 'L ' + fmt(egresos);
+  document.getElementById('mc-costos').textContent   = 'L ' + fmt(costos);
+  document.getElementById('mc-diezmos').textContent  = 'L ' + fmt(diezmos);
+  document.getElementById('mc-ofrendas').textContent = 'L ' + fmt(ofrendas);
+  document.getElementById('mc-movs').textContent     = regs.length;
+
+  const ganEl = document.getElementById('mc-ganancia');
+  ganEl.textContent = 'L ' + fmt(ganancia);
+  ganEl.style.color = ganancia >= 0 ? 'var(--amber)' : 'var(--red)';
+
+  const netoEl = document.getElementById('mc-neto');
+  netoEl.textContent = 'L ' + fmt(neto);
+  netoEl.style.color = neto >= 0 ? 'var(--green)' : 'var(--red)';
+
+  document.getElementById('mc-margen').textContent = margen + '%';
+  document.getElementById('mc-margen').style.color = ganancia >= 0 ? 'var(--amber)' : 'var(--red)';
+  document.getElementById('modal-cierre').classList.add('open');
+}
+
+function closeCierreModal() {
+  document.getElementById('modal-cierre').classList.remove('open');
+}
+
+function guardarCierre() {
+  if (!cierreActual) return;
+  const c = cierreActual;
+
+  if (!historialCierres) historialCierres = [];
+  const yaExiste = historialCierres.find(x => x.mesIdx === c.mesIdx && x.anio === c.anio);
+  if (yaExiste) {
+    if (!confirm(`Ya existe un cierre de ${c.mesNombre}.\n¿Deseas reemplazarlo?`)) return;
+    historialCierres = historialCierres.filter(x => !(x.mesIdx === c.mesIdx && x.anio === c.anio));
+  }
+
+  const cierreObj = { ...c, fechaGuardado: fechaHN(new Date()), horaGuardado: horaHN(new Date()) };
+  historialCierres.unshift(cierreObj);
+
+  const cierreReg = {
+    id: Date.now(),
+    fecha: cierreObj.fechaGuardado, fechaKey: hoyKey(),
+    hora:  cierreObj.horaGuardado,
+    desc:  `[CIERRE] ${c.mesNombre} · Ingresos L${fmt(c.ingresos)} | Egresos L${fmt(c.egresos)} | Ganancia L${fmt(c.ganancia)}`,
+    neto: 0, bruto: 0, comision: 0, diezmo: c.diezmos, ofrenda: c.ofrendas,
+    costo: c.costos, ganancia: c.ganancia,
+    categoria: 'Cierre Mensual', cliente: '', pagado: 'Sí',
+    observaciones: `Margen: ${c.margen}% | Movimientos: ${c.totalMovs}`,
+    tipo: 'IN', bancoId: '', bancoNombre: 'CIERRE', esCierre: true
+  };
+  registros.unshift(cierreReg);
+  enviarAGoogleSheets(cierreReg);
+  saveAll();
+  renderHistorialCierres();
+  closeCierreModal();
+  toast(`✓ Cierre de ${c.mesNombre} guardado`);
+}
+
+function renderHistorialCierres() {
+  const wrap = document.getElementById('cierres-hist-wrap');
+  const cont = document.getElementById('cierres-hist');
+  if (!wrap || !cont) return;
+  if (!historialCierres || !historialCierres.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  cont.innerHTML = historialCierres.map(c => `
+    <div style="background:var(--s3);border:1px solid var(--bd2);border-left:3px solid var(--amber);
+      border-radius:7px;padding:9px 11px;cursor:pointer" onclick="verCierre('${c.mesNombre}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-size:.72rem;font-weight:800;color:var(--amber)">${c.mesNombre}</span>
+        <span style="font-size:.62rem;color:var(--muted)">${c.fechaGuardado}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
+        <div style="text-align:center">
+          <div style="font-size:.55rem;color:var(--muted);text-transform:uppercase">Ingresos</div>
+          <div style="font-family:var(--mono);font-size:.75rem;color:var(--green)">L ${fmt(c.ingresos)}</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:.55rem;color:var(--muted);text-transform:uppercase">Ganancia</div>
+          <div style="font-family:var(--mono);font-size:.75rem;color:${c.ganancia>=0?'var(--amber)':'var(--red)'}">L ${fmt(c.ganancia)}</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:.55rem;color:var(--muted);text-transform:uppercase">Margen</div>
+          <div style="font-family:var(--mono);font-size:.75rem;color:var(--blue)">${c.margen}%</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function verCierre(mesNombre) {
+  const c = historialCierres.find(x => x.mesNombre === mesNombre);
+  if (!c) return;
+  cierreActual = c;
+  document.getElementById('modal-cierre-titulo').textContent = 'Cierre — ' + c.mesNombre;
+  document.getElementById('mc-ingresos').textContent = 'L ' + fmt(c.ingresos);
+  document.getElementById('mc-egresos').textContent  = 'L ' + fmt(c.egresos);
+  document.getElementById('mc-costos').textContent   = 'L ' + fmt(c.costos);
+  document.getElementById('mc-diezmos').textContent  = 'L ' + fmt(c.diezmos);
+  document.getElementById('mc-ofrendas').textContent = 'L ' + fmt(c.ofrendas);
+  document.getElementById('mc-movs').textContent     = c.totalMovs;
+  const ganEl = document.getElementById('mc-ganancia');
+  ganEl.textContent = 'L ' + fmt(c.ganancia);
+  ganEl.style.color = c.ganancia >= 0 ? 'var(--amber)' : 'var(--red)';
+  const netoEl = document.getElementById('mc-neto');
+  netoEl.textContent = 'L ' + fmt(c.neto);
+  netoEl.style.color = c.neto >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('mc-margen').textContent = c.margen + '%';
+  document.getElementById('modal-cierre').classList.add('open');
 }
 
 function renderProyectos() {
@@ -2598,6 +2927,7 @@ function saveAll() {
   localStorage.setItem('gh_diezmo', JSON.stringify({total: diezmoTotal, historial: diezmoHistorial, pagado: diezmoPagado}));
   localStorage.setItem('gh_ofrenda', JSON.stringify({total: ofrendaTotal, historial: ofrendaHistorial, pagada: ofrendaPagada}));
   localStorage.setItem('gh_proyectos', JSON.stringify(proyectos));
+  localStorage.setItem('gh_cierres', JSON.stringify(historialCierres));
   invSave();
 }
 
@@ -2625,6 +2955,8 @@ function loadAll() {
   }
   const pz = JSON.parse(localStorage.getItem('gh_proyectos') || 'null');
   if (pz) proyectos = pz;
+  const cz = JSON.parse(localStorage.getItem('gh_cierres') || 'null');
+  if (cz) historialCierres = cz;
 
   calcular();
   actualizarLog();
@@ -2632,6 +2964,7 @@ function loadAll() {
   renderDiezmoHist();
   renderOfrendaHist();
   renderProyectos();
+  renderHistorialCierres();
 }
 
 /* ═══ EXPORTAR CSV ═══ */
