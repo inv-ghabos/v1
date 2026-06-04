@@ -2850,13 +2850,38 @@ function renderHistorial() {
   if (!list.length) { body.innerHTML = '<div class="no-res">Sin movimientos · Ajusta los filtros</div>'; return; }
 
   const grupos = list.reduce((acc, r) => {
-    const k = r.fechaKey || r.fecha;
+    let k = r.fechaKey || '';
+    if (!k || k === 'undefined') {
+      const f = String(r.fecha || '');
+      if (f.includes('T')) k = f.split('T')[0];
+      else if (f.includes('/')) {
+        const p = f.split('/');
+        if (p.length === 3) k = parseInt(p[0]) > 12
+          ? `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`
+          : `${p[2]}-${p[0].padStart(2,'0')}-${p[1].padStart(2,'0')}`;
+      } else k = f;
+    }
+    if (k.includes('T')) k = k.split('T')[0];
+    if (!k) k = 'Sin fecha';
     (acc[k] = acc[k] || []).push(r);
     return acc;
   }, {});
 
+  function fechaLegible(k, r) {
+    if (r.fecha && r.fecha.includes('/') && !r.fecha.includes('T')) return r.fecha;
+    if (k && k.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [a,m,d] = k.split('-');
+      return `${d}/${m}/${a}`;
+    }
+    if (r.fecha && r.fecha.includes('T')) {
+      const p = r.fecha.split('T')[0].split('-');
+      return `${p[2]}/${p[1]}/${p[0]}`;
+    }
+    return k;
+  }
+
   body.innerHTML = Object.keys(grupos).sort((a,b) => b.localeCompare(a)).map(k => `
-    <div class="dgroup">${grupos[k][0].fecha}</div>
+    <div class="dgroup">${fechaLegible(k, grupos[k][0])}</div>
     <table class="htable">
       <thead><tr>
         <th>Hora</th><th>Descripción</th><th>Cuenta</th><th>Diezmo</th><th>Ofrenda</th><th>Utilidad</th><th>Tipo</th><th>Neto</th><th>✏️</th>
