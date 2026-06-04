@@ -2215,8 +2215,8 @@ function renderProyectos() {
 
 /* ═══ EDITAR / ELIMINAR REGISTROS ═══ */
 function editarRegistro(id) {
-  const r = registros.find(x => x.id == id);
-  if (!r) return;
+  const r = registros.find(x => String(x.id) === String(id));
+  if (!r) { toast('Registro no encontrado', 'err'); return; }
   document.getElementById('edit-id').value        = r.id;
   document.getElementById('edit-desc').value      = r.desc        || '';
   document.getElementById('edit-fecha').value     = r.fechaKey    || '';
@@ -2235,7 +2235,7 @@ function cerrarEditar() {
 
 function guardarEdicion() {
   const id  = document.getElementById('edit-id').value;
-  const idx = registros.findIndex(x => x.id == id);
+  const idx = registros.findIndex(x => String(x.id) === String(id));
   if (idx === -1) return;
   const r       = registros[idx];
   const bruto   = parseFloat(document.getElementById('edit-monto').value) || r.bruto || r.neto;
@@ -2260,10 +2260,10 @@ function guardarEdicion() {
 }
 
 function eliminarRegistroHist(id) {
-  const r = registros.find(x => x.id == id);
+  const r = registros.find(x => String(x.id) === String(id));
   if (!r) return;
   if (!confirm(`¿Eliminar?\n"${r.desc}" — L ${fmt(r.neto)}`)) return;
-  registros = registros.filter(x => x.id != id);
+  registros = registros.filter(x => String(x.id) !== String(id));
   saveAll(); renderHistorial(); calcular();
   toast('Registro eliminado', 'err');
 }
@@ -2879,8 +2879,8 @@ function renderHistorial() {
           <td style="font-family:var(--mono);font-weight:600;color:${r.tipo==='IN'?'var(--green)':'var(--red)'}">
             ${r.tipo==='IN'?'+':'−'}${fmt(r.neto)}</td>
           <td>
-            <button onclick="editarRegistro(${r.id})" style="background:var(--blue-bg);border:1px solid var(--bd2);color:var(--blue);border-radius:5px;padding:3px 7px;font-size:.65rem;cursor:pointer;font-family:var(--font);font-weight:700">✏️</button>
-            <button onclick="eliminarRegistroHist(${r.id})" style="background:var(--red-bg);border:1px solid #3d0a0a;color:var(--red);border-radius:5px;padding:3px 7px;font-size:.65rem;cursor:pointer;font-family:var(--font);font-weight:700;margin-top:3px">🗑️</button>
+            <button onclick="editarRegistro('${r.id}')" style="background:var(--blue-bg);border:1px solid var(--bd2);color:var(--blue);border-radius:5px;padding:3px 7px;font-size:.65rem;cursor:pointer;font-family:var(--font);font-weight:700">✏️</button>
+            <button onclick="eliminarRegistroHist('${r.id}')" style="background:var(--red-bg);border:1px solid #3d0a0a;color:var(--red);border-radius:5px;padding:3px 7px;font-size:.65rem;cursor:pointer;font-family:var(--font);font-weight:700;margin-top:3px">🗑️</button>
           </td>
         </tr>`).join('')}
       </tbody>
